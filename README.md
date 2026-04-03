@@ -252,6 +252,6 @@ The focus was not only on meeting the assignment requirements, but also on makin
 ### Insights & Analytics
 ![Insights Page](./public/screenshots/insights-page.png)
 
-### Responsive Mobile View
-![Mobile View](./public/screenshots/Mobileview.png)
+### Responsive Mobile-View
+![Mobile View](./public/screenshots/mobile-view.png)
 ---
