@@ -175,6 +175,8 @@ npm run dev
 ```bash
 http://localhost:5173
 ```
+### Live Demo
+[View Live Project](https://finance-dashboard-ui-wheat-six.vercel.app/)
 
 ---
 
