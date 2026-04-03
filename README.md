@@ -157,7 +157,7 @@ finance-dashboard-ui/
 
 ### 1. Clone the project
 ```bash
-git clone <your-repository-link>
+git clone <https://github.com/Prathikx/finance-dashboard-ui>
 cd finance-dashboard-ui
 ```
 
