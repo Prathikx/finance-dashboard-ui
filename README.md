@@ -241,4 +241,17 @@ This project was built with the goal of delivering a **clean, functional, and po
 
 The focus was not only on meeting the assignment requirements, but also on making the interface feel more complete and user-friendly.
 
+## 📸 Preview
+
+### Dashboard Overview
+![Dashboard Overview](./public/screenshots/dashboard-overview.png)
+
+### Transactions Management
+![Transactions Page](./public/screenshots/transactions-page.png)
+
+### Insights & Analytics
+![Insights Page](./public/screenshots/insights-page.png)
+![Insights Page](./public/screenshots/insights-page1.png)
+### Responsive Mobile View
+![Mobile View](./public/screenshots/Mobileview.png)
 ---
