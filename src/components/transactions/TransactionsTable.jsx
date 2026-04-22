@@ -56,7 +56,16 @@ export default function TransactionsTable({ transactions = [] }) {
                     <button className="icon-btn" onClick={() => openModal(t)}>
                       <Pencil size={16} />
                     </button>
-                    <button className="icon-btn danger" onClick={() => deleteTransaction(t.id)}>
+                    <button className="icon-btn danger" onClick={async () => {
+                      if (window.confirm("Are you sure you want to delete this transaction?")) {
+                        try {
+                          await deleteTransaction(t.id);
+                          alert("Transaction deleted successfully");
+                        } catch (err) {
+                          alert("Failed to delete transaction");
+                        }
+                      }
+                    }}>
                       <Trash2 size={16} />
                     </button>
                   </>

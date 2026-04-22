@@ -4,7 +4,7 @@ import { useFinanceStore } from "../../store/useFinanceStore";
 function TransactionForm({ editingTransaction, closeModal, addTransaction, updateTransaction }) {
   const initialForm = editingTransaction
     ? {
-        date: editingTransaction.date || new Date().toISOString().slice(0, 10),
+        date: editingTransaction.date ? new Date(editingTransaction.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
         category: editingTransaction.category || "",
         type: editingTransaction.type || "expense",
         amount:
@@ -22,6 +22,8 @@ function TransactionForm({ editingTransaction, closeModal, addTransaction, updat
       };
 
   const [form, setForm] = useState(initialForm);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -31,7 +33,7 @@ function TransactionForm({ editingTransaction, closeModal, addTransaction, updat
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!form.category.trim() || !form.amount) return;
@@ -41,20 +43,31 @@ function TransactionForm({ editingTransaction, closeModal, addTransaction, updat
       amount: Number(form.amount),
     };
 
-    if (editingTransaction) {
-      updateTransaction({
-        ...payload,
-        id: editingTransaction.id,
-      });
-    } else {
-      addTransaction(payload);
-    }
+    setIsLoading(true);
+    setError(null);
 
-    closeModal();
+    try {
+      if (editingTransaction) {
+        await updateTransaction({
+          ...payload,
+          id: editingTransaction.id,
+        });
+        alert("Transaction updated successfully!");
+      } else {
+        await addTransaction(payload);
+        alert("Transaction added successfully!");
+      }
+      closeModal();
+    } catch (err) {
+      setError(err.response?.data?.message || "An error occurred");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="modal-form">
+      {error && <div className="text-red-500 mb-4">{error}</div>}
       <input type="date" name="date" value={form.date} onChange={handleChange} required />
       <input type="text" name="category" placeholder="Category" value={form.category} onChange={handleChange} required />
       <select name="type" value={form.type} onChange={handleChange}>
@@ -64,9 +77,9 @@ function TransactionForm({ editingTransaction, closeModal, addTransaction, updat
       <input type="number" name="amount" placeholder="Amount" value={form.amount} onChange={handleChange} required />
       <input type="text" name="note" placeholder="Note (optional)" value={form.note} onChange={handleChange} />
       <div className="modal-actions">
-        <button type="button" className="ghost-btn" onClick={closeModal}>Cancel</button>
-        <button type="submit" className="primary-btn">
-          {editingTransaction ? "Update" : "Add"}
+        <button type="button" className="ghost-btn" onClick={closeModal} disabled={isLoading}>Cancel</button>
+        <button type="submit" className="primary-btn" disabled={isLoading}>
+          {isLoading ? "Saving..." : (editingTransaction ? "Update" : "Add")}
         </button>
       </div>
     </form>
