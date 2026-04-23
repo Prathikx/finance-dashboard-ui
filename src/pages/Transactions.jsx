@@ -7,31 +7,34 @@ import AddEditTransactionModal from "../components/transactions/AddEditTransacti
 import { exportToCSV } from "../utils/export";
 
 export default function Transactions() {
-  const role = useFinanceStore((s) => s.role);
   const transactions = useFinanceStore((s) => s.transactions);
+  const isLoading = useFinanceStore((s) => s.isLoading);
+  const error = useFinanceStore((s) => s.error);
   const filters = useFinanceStore((s) => s.filters);
+  const role = useFinanceStore((s) => s.role);
   const openModal = useFinanceStore((s) => s.openModal);
 
   const [viewingMonth, setViewingMonth] = useState(null);
 
   const filtered = useMemo(() => {
+    if (!Array.isArray(transactions)) return [];
     let list = [...transactions];
 
     if (filters.search) {
       const q = filters.search.toLowerCase();
       list = list.filter(
         (t) =>
-          (t.category || "").toLowerCase().includes(q) ||
-          (t.note || "").toLowerCase().includes(q)
+          t && ((t.category || "").toLowerCase().includes(q) ||
+          (t.note || "").toLowerCase().includes(q))
       );
     }
 
     if (filters.type !== "all") {
-      list = list.filter((t) => t.type === filters.type);
+      list = list.filter((t) => t && t.type === filters.type);
     }
 
     if (filters.category !== "all") {
-      list = list.filter((t) => t.category === filters.category);
+      list = list.filter((t) => t && t.category === filters.category);
     }
 
     if (filters.sort === "latest") {
@@ -46,24 +49,47 @@ export default function Transactions() {
   // Group by month
   const grouped = useMemo(() => {
     return filtered.reduce((acc, t) => {
+      if (!t || !t.date) return acc;
       const d = new Date(t.date);
+      if (isNaN(d.getTime())) return acc;
+      
       const monthName = d.toLocaleString('default', { month: 'long', year: 'numeric' });
       if (!acc[monthName]) acc[monthName] = { name: monthName, data: [], income: 0, expense: 0 };
       acc[monthName].data.push(t);
-      if (t.type === 'income') acc[monthName].income += Number(t.amount);
-      else acc[monthName].expense += Number(t.amount);
+      if (t.type === 'income') acc[monthName].income += Number(t.amount || 0);
+      else acc[monthName].expense += Number(t.amount || 0);
       return acc;
     }, {});
   }, [filtered]);
 
   const monthKeys = useMemo(() => {
     const keys = Object.keys(grouped);
-    if (filters.sort === "latest") {
-      return keys.sort((a, b) => new Date(grouped[b].data[0].date) - new Date(grouped[a].data[0].date));
-    } else {
-      return keys.sort((a, b) => new Date(grouped[a].data[0].date) - new Date(grouped[b].data[0].date));
-    }
+    return keys.sort((a, b) => {
+      const dateB = grouped[b]?.data?.[0]?.date ? new Date(grouped[b].data[0].date) : new Date(0);
+      const dateA = grouped[a]?.data?.[0]?.date ? new Date(grouped[a].data[0].date) : new Date(0);
+      return filters.sort === "latest" ? dateB - dateA : dateA - dateB;
+    });
   }, [grouped, filters.sort]);
+
+  // IMPORTANT: Hooks must come before early returns
+  if (isLoading) {
+    return (
+      <div className="loading-screen">
+        <div className="spinner"></div>
+        <p>Fetching transactions...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="error-banner">
+        <h3>Error Loading Transactions</h3>
+        <p>{error}</p>
+        <button onClick={() => window.location.reload()} className="retry-link">Retry</button>
+      </div>
+    );
+  }
 
   return (
     <div className="page">
@@ -114,28 +140,35 @@ export default function Transactions() {
       <div className="transactions-content">
         {!viewingMonth ? (
           <div className="month-grid">
-            {monthKeys.map(month => (
-              <div key={month} className="month-card" onClick={() => setViewingMonth(month)}>
-                <div className="month-card-header">
-                  <Calendar className="month-icon" size={24} />
-                  <h3>{month}</h3>
-                </div>
-                <div className="month-card-stats">
-                  <div className="stat">
-                    <span>Income</span>
-                    <p className="text-success">₹{grouped[month].income.toLocaleString()}</p>
+            {monthKeys.length > 0 ? (
+              monthKeys.map(month => (
+                <div key={month} className="month-card" onClick={() => setViewingMonth(month)}>
+                  <div className="month-card-header">
+                    <Calendar className="month-icon" size={24} />
+                    <h3>{month}</h3>
                   </div>
-                  <div className="stat">
-                    <span>Expense</span>
-                    <p className="text-danger">₹{grouped[month].expense.toLocaleString()}</p>
+                  <div className="month-card-stats">
+                    <div className="stat">
+                      <span>Income</span>
+                      <p className="text-success">₹{grouped[month].income.toLocaleString()}</p>
+                    </div>
+                    <div className="stat">
+                      <span>Expense</span>
+                      <p className="text-danger">₹{grouped[month].expense.toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <div className="month-card-footer">
+                    <span>{grouped[month].data.length} Transactions</span>
+                    <span className="view-link">View Details →</span>
                   </div>
                 </div>
-                <div className="month-card-footer">
-                  <span>{grouped[month].data.length} Transactions</span>
-                  <span className="view-link">View Details →</span>
-                </div>
+              ))
+            ) : (
+              <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
+                <h3>No transactions found</h3>
+                <p>Try adjusting your search or filters.</p>
               </div>
-            ))}
+            )}
           </div>
         ) : (
           grouped[viewingMonth] ? (

@@ -6,38 +6,65 @@ import CategoryPieChart from "../components/charts/CategoryPieChart";
 
 export default function Dashboard() {
   const transactions = useFinanceStore((s) => s.transactions);
+  const isLoading = useFinanceStore((s) => s.isLoading);
+  const error = useFinanceStore((s) => s.error);
   const role = useFinanceStore((s) => s.role);
+
+  const [selectedMonth, setSelectedMonth] = useState("all");
 
   // Get unique months from transactions for the selector
   const availableMonths = useMemo(() => {
-    const months = [...new Set(transactions.map(t => {
+    if (!Array.isArray(transactions)) return [];
+    
+    const months = [...new Set(transactions.filter(t => t && t.date).map(t => {
       const d = new Date(t.date);
+      if (isNaN(d.getTime())) return null;
       return d.toLocaleString('default', { month: 'long', year: 'numeric' });
-    }))];
+    }))].filter(Boolean);
     
     // Sort months descending (latest first)
     return months.sort((a, b) => new Date(b) - new Date(a));
   }, [transactions]);
 
-  const [selectedMonth, setSelectedMonth] = useState("all");
-
   const filteredTransactions = useMemo(() => {
+    if (!Array.isArray(transactions)) return [];
     if (selectedMonth === "all") return transactions;
     return transactions.filter(t => {
+      if (!t || !t.date) return false;
       const d = new Date(t.date);
       return d.toLocaleString('default', { month: 'long', year: 'numeric' }) === selectedMonth;
     });
   }, [transactions, selectedMonth]);
 
-  const totalIncome = filteredTransactions
-    .filter((t) => t.type === "income")
-    .reduce((sum, t) => sum + Number(t.amount), 0);
+  const totalIncome = (filteredTransactions || [])
+    .filter((t) => t && t.type === "income")
+    .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
 
-  const totalExpense = filteredTransactions
-    .filter((t) => t.type === "expense")
-    .reduce((sum, t) => sum + Number(t.amount), 0);
+  const totalExpense = (filteredTransactions || [])
+    .filter((t) => t && t.type === "expense")
+    .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
 
   const totalBalance = totalIncome - totalExpense;
+
+  // IMPORTANT: Hooks must come before early returns
+  if (isLoading) {
+    return (
+      <div className="loading-screen">
+        <div className="spinner"></div>
+        <p>Loading your financial data...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="error-banner">
+        <h3>Unable to load data</h3>
+        <p>{error}. Please ensure the backend server is running.</p>
+        <button onClick={() => window.location.reload()} className="retry-link">Retry</button>
+      </div>
+    );
+  }
 
   return (
     <div className="page">
