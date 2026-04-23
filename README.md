@@ -153,13 +153,12 @@ finance-dashboard-ui/
 
 ---
 
+---
+
 ## Setup Instructions
 
-### 1. Clone the project
-```bash
-git clone <https://github.com/Prathikx/finance-dashboard-ui>
-cd finance-dashboard-ui
-```
+### 1. Prerequisites
+Ensure the backend is running. Follow instructions in the [backend README](../finance-dashboard-backend/README.md).
 
 ### 2. Install dependencies
 ```bash
@@ -175,57 +174,14 @@ npm run dev
 ```bash
 http://localhost:5173
 ```
-### Live Demo
-[View Live Project](https://finance-dashboard-ui-wheat-six.vercel.app/)
-
----
-
-## How State is Managed
-
-The application uses **Zustand** to manage frontend state such as:
-
-- transaction list
-- selected role
-- filters
-- UI-related interactions
-
-This keeps the project simple and lightweight while still making the app easy to scale.
-
----
-
-## Role Behavior
-
-This project does **not** implement backend authentication or real RBAC.  
-Instead, role behavior is **simulated on the frontend** to demonstrate how UI and interactions can change depending on the user role.
-
-### Viewer:
-- Can only view information
-
-### Admin:
-- Can manage transaction records
-- Sees enhanced control/monitoring UI
-
----
-
-## Optional Enhancements Included
-
-The following optional enhancements were included to strengthen the submission:
-
-- Dark mode
-- Export functionality
-- Role-based UI behavior
-- Interactive visual polish
-- Responsive design improvements
-- Admin-focused enhancements on Dashboard and Insights
 
 ---
 
 ## Assumptions
 
-- This is a **frontend-focused assignment**
-- No backend/API/database is required
-- Transaction data is mock/static
-- Role-based behavior is intentionally simulated in the UI
+- This dashboard interacts with a Node.js/MySQL backend.
+- Transaction data is persisted in a database.
+- Role-based behavior is managed in the UI based on logged-in state.
 
 ---
 
