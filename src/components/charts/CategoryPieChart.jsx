@@ -3,8 +3,9 @@ import { PieChart, Pie, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 const COLORS = ["#6366f1", "#22c55e", "#ef4444", "#06b6d4", "#f59e0b", "#8b5cf6"];
 
-export default function CategoryPieChart() {
-  const transactions = useFinanceStore((s) => s.transactions);
+export default function CategoryPieChart({ transactions: propsTransactions }) {
+  const storeTransactions = useFinanceStore((s) => s.transactions);
+  const transactions = propsTransactions || storeTransactions;
 
   const totals = {};
   transactions

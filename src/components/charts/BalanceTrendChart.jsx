@@ -10,32 +10,61 @@ import {
   CartesianGrid,
 } from "recharts";
 
-export default function BalanceTrendChart() {
-  const transactions = useFinanceStore((state) => state.transactions);
+export default function BalanceTrendChart({ transactions: propsTransactions }) {
+  const storeTransactions = useFinanceStore((state) => state.transactions);
+  const transactions = propsTransactions || storeTransactions;
 
   const chartData = useMemo(() => {
     if (!Array.isArray(transactions) || transactions.length === 0) return [];
 
     const sorted = [...transactions].sort((a, b) =>
-      String(a.date).localeCompare(String(b.date))
+      new Date(a.date) - new Date(b.date)
     );
 
-    let runningBalance = 0;
+    // Check how many months are spanned
+    const firstDate = new Date(sorted[0].date);
+    const lastDate = new Date(sorted[sorted.length - 1].date);
+    const monthSpan = (lastDate.getFullYear() - firstDate.getFullYear()) * 12 + (lastDate.getMonth() - firstDate.getMonth());
 
-    return sorted.map((txn) => {
-      const amount = Number(txn.amount) || 0;
+    if (monthSpan === 0) {
+      // Individual Month view -> Aggregate by Day
+      const dailyData = {};
+      let runningBalance = 0;
 
-      if (txn.type === "income") {
-        runningBalance += amount;
-      } else {
-        runningBalance -= amount;
-      }
+      sorted.forEach((txn) => {
+        const amount = Number(txn.amount) || 0;
+        if (txn.type === "income") runningBalance += amount;
+        else runningBalance -= amount;
 
-      return {
-        date: txn.date || "",
-        balance: runningBalance,
-      };
-    });
+        const dateStr = new Date(txn.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+        dailyData[dateStr] = {
+          name: dateStr,
+          balance: runningBalance,
+          dateObj: new Date(txn.date)
+        };
+      });
+      return Object.values(dailyData).sort((a, b) => a.dateObj - b.dateObj);
+    } else {
+      // Multi-month/Yearly view -> Aggregate by Month
+      const monthlyData = {};
+      let runningBalance = 0;
+
+      sorted.forEach((txn) => {
+        const amount = Number(txn.amount) || 0;
+        if (txn.type === "income") runningBalance += amount;
+        else runningBalance -= amount;
+
+        const d = new Date(txn.date);
+        const monthYear = d.toLocaleString('default', { month: 'short', year: '2-digit' });
+        
+        monthlyData[monthYear] = {
+          name: monthYear,
+          balance: runningBalance,
+          dateObj: new Date(d.getFullYear(), d.getMonth(), 1)
+        };
+      });
+      return Object.values(monthlyData).sort((a, b) => a.dateObj - b.dateObj);
+    }
   }, [transactions]);
 
   if (!chartData.length) {
@@ -64,7 +93,7 @@ export default function BalanceTrendChart() {
           margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
         >
           <CartesianGrid strokeDasharray="4 4" opacity={0.15} />
-          <XAxis dataKey="date" />
+          <XAxis dataKey="name" />
           <YAxis />
           <Tooltip
             formatter={(value) => [`₹${Number(value).toLocaleString("en-IN")}`, "Balance"]}

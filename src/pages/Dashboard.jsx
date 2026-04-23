@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { useFinanceStore } from "../store/useFinanceStore";
 import SummaryCard from "../components/cards/SummaryCard";
 import BalanceTrendChart from "../components/charts/BalanceTrendChart";
@@ -7,11 +8,32 @@ export default function Dashboard() {
   const transactions = useFinanceStore((s) => s.transactions);
   const role = useFinanceStore((s) => s.role);
 
-  const totalIncome = transactions
+  // Get unique months from transactions for the selector
+  const availableMonths = useMemo(() => {
+    const months = [...new Set(transactions.map(t => {
+      const d = new Date(t.date);
+      return d.toLocaleString('default', { month: 'long', year: 'numeric' });
+    }))];
+    
+    // Sort months descending (latest first)
+    return months.sort((a, b) => new Date(b) - new Date(a));
+  }, [transactions]);
+
+  const [selectedMonth, setSelectedMonth] = useState("all");
+
+  const filteredTransactions = useMemo(() => {
+    if (selectedMonth === "all") return transactions;
+    return transactions.filter(t => {
+      const d = new Date(t.date);
+      return d.toLocaleString('default', { month: 'long', year: 'numeric' }) === selectedMonth;
+    });
+  }, [transactions, selectedMonth]);
+
+  const totalIncome = filteredTransactions
     .filter((t) => t.type === "income")
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
-  const totalExpense = transactions
+  const totalExpense = filteredTransactions
     .filter((t) => t.type === "expense")
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
@@ -27,6 +49,20 @@ export default function Dashboard() {
               ? "Monitor trends, manage transactions, and make data-driven decisions."
               : "Track your finances with clear and simple insights."}
           </p>
+        </div>
+
+        <div className="dashboard-filter">
+          <label>View Data For: </label>
+          <select 
+            value={selectedMonth} 
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="month-selector"
+          >
+            <option value="all">All Time (12 Months)</option>
+            {availableMonths.map(m => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -60,7 +96,7 @@ export default function Dashboard() {
             <h3>Balance Trend</h3>
             <p>Time-based visualization</p>
           </div>
-          <BalanceTrendChart />
+          <BalanceTrendChart transactions={filteredTransactions} />
         </div>
 
         <div className="chart-card">
@@ -68,7 +104,7 @@ export default function Dashboard() {
             <h3>Category Breakdown</h3>
             <p>Spending distribution</p>
           </div>
-          <CategoryPieChart />
+          <CategoryPieChart transactions={filteredTransactions} />
         </div>
       </div>
 
